@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
-from urllib2 import urlopen
+# from urllib2 import urlopen
+import urllib.request
 from PIL import Image
 import traceback
 import threading
@@ -14,7 +15,7 @@ import os
 FILE_TO_DOWNLOAD_FROM = "VesselClassification.dat"
 ##FILE_TO_DOWNLOAD_FROM = "IMOTrainAndTest.dat" 
 
-NUMBER_OF_WORKERS = 10
+NUMBER_OF_WORKERS = 1
 MAX_NUM_OF_FILES_IN_FOLDER = 5000
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
@@ -37,7 +38,9 @@ logging.debug("Process started at " + str(datetime.datetime.now()))
 
 def save_image(ID,justImage,outFolder):
     url = sourceLink + ID
-    html = urlopen(url,timeout = 300).read()
+    # html = urllib.request.urlopen(url,timeout = 300).read()
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    html = urllib.request.urlopen(req, timeout=300).read()
     soup = BeautifulSoup(html,"lxml")
 
     images = [img for img in soup.findAll('img')]
@@ -50,7 +53,9 @@ def save_image(ID,justImage,outFolder):
     for each in image_links:
         if "http" in each and "jpg" in each and "photos/middle" in each:
             filename=each.split('/')[-1]
-            f = urlopen(each)
+            # f = urllib.request.urlopen(each)
+            img_req = urllib.request.Request(each, headers={"User-Agent": "Mozilla/5.0"})
+            f = urllib.request.urlopen(img_req)
             with open(os.path.join(outFolder,filename), "wb") as local_file:
                 local_file.write(f.read())
             if ORIGINAL_SIZE == 0:
