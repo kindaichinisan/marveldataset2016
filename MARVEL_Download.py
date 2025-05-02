@@ -155,7 +155,7 @@ flag = True
 while flag:
     counter = 0
     for eachT in threads:
-        if eachT.isAlive() == False:
+        if not eachT.is_alive():
             counter = counter + 1
     if counter == NUMBER_OF_WORKERS:
         flag = False
