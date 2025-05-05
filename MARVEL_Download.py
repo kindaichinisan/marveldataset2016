@@ -10,9 +10,11 @@ import codecs
 import math
 import sys
 import os
+import io
+import http.client
 
 ##Uncomment the related dat file ('VesselClassification.dat' for Vessel Classification, 'IMOTrainAndTest.dat' for Vessel Verification/Retrieval/Recognition tasks.)
-FILE_TO_DOWNLOAD_FROM = "VesselClassification_test.dat"
+FILE_TO_DOWNLOAD_FROM = "VesselClassification.dat"
 ##FILE_TO_DOWNLOAD_FROM = "IMOTrainAndTest.dat" 
 
 NUMBER_OF_WORKERS = 1
@@ -33,7 +35,10 @@ impText2 = ["Former name(s):"]
 
 sourceLink = "http://www.shipspotting.com/gallery/photo.php?lid="
 
-logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-10s) %(message)s', )
+logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-10s) %(message)s', handlers=[
+    logging.FileHandler("download.log", mode="w", encoding="utf-8"),
+    logging.StreamHandler() #keeps showing logs in console too
+] )
 logging.debug("Process started at " + str(datetime.datetime.now()))
 
 def save_image(ID,justImage,outFolder):
@@ -52,6 +57,7 @@ def save_image(ID,justImage,outFolder):
     fields_to_extract = [
         "Photographer", "Title", "Photo Category", "Added", "Views", "Image Resolution", "Description", "Current name", "Current flag", "Home port", "Callsign", "IMO", "MMSI", "Build year", "Builder", "Manager", "Owner", "Class society", "Vessel Type", "Gross tonnage", "Summer DWT", "Length", "Beam", "Draught", "Photos", "Former name"
     ]
+    info = {field: "" for field in fields_to_extract}
 
     if not justImage:
         #WJ: this is obsolete and website does not use this to pass information
@@ -82,8 +88,8 @@ def save_image(ID,justImage,outFolder):
             info['Former name']= name_tag.get_text(strip=True) if name_tag else ""
             
         # Example output
-        for key, val in info.items():
-            print(f"{key}: {val}")
+        # for key, val in info.items():
+        #     print(f"{key}: {val}")
 
     filename = " "
     for each in image_links:
@@ -92,14 +98,29 @@ def save_image(ID,justImage,outFolder):
             filename=filename.split('?')[0] #change 3608498.jpg?cb=0 to 3608498.jpg
             # f = urllib.request.urlopen(each)
             img_req = urllib.request.Request(each, headers={"User-Agent": "Mozilla/5.0"})
-            f = urllib.request.urlopen(img_req)
-            with open(os.path.join(outFolder,filename), "wb") as local_file:
-                local_file.write(f.read())
-            if ORIGINAL_SIZE == 0:
-                img = Image.open(os.path.join(outFolder,filename)).resize((IMAGE_HEIGHT,IMAGE_WIDTH), Image.LANCZOS)
-                os.remove(os.path.join(outFolder,filename))
-                with open(os.path.join(outFolder,filename), "wb") as out:
-                    img.save(out,"JPEG")
+
+            read_complete=False
+            try:
+                f = urllib.request.urlopen(img_req)
+                img_data = f.read()
+                read_complete=True
+            except http.client.IncompleteRead as e:
+                logging.debug(str(ID) + f"\t - http.client.IncompleteRead for {url}")
+
+            if read_complete:
+                # Open image from bytes
+                img = Image.open(io.BytesIO(img_data))
+
+                # Crop bottom 20 pixels
+                width, height = img.size
+                cropped_img = img.crop((0, 0, width, height - 20))
+                with open(os.path.join(outFolder, filename), "wb") as out:
+                    cropped_img.save(out, "JPEG")
+                if ORIGINAL_SIZE == 0:
+                    img = Image.open(os.path.join(outFolder,filename)).resize((IMAGE_HEIGHT,IMAGE_WIDTH), Image.LANCZOS)
+                    os.remove(os.path.join(outFolder,filename))
+                    with open(os.path.join(outFolder,filename), "wb") as out:
+                        img.save(out,"JPEG")
             break
         
     if filename != " " and not justImage:
@@ -119,8 +140,9 @@ def save_image(ID,justImage,outFolder):
         #                 else:
         #                     break
         #             break
-
+        tFile.write(f"url: {url}\n")
         for field in fields_to_extract:
+            
             tFile.write(f"{field}: {info[field]}\n")
         tFile.close()
     if filename == " ":
