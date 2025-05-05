@@ -12,15 +12,15 @@ import sys
 import os
 
 ##Uncomment the related dat file ('VesselClassification.dat' for Vessel Classification, 'IMOTrainAndTest.dat' for Vessel Verification/Retrieval/Recognition tasks.)
-FILE_TO_DOWNLOAD_FROM = "VesselClassification.dat"
+FILE_TO_DOWNLOAD_FROM = "VesselClassification_test.dat"
 ##FILE_TO_DOWNLOAD_FROM = "IMOTrainAndTest.dat" 
 
 NUMBER_OF_WORKERS = 1
 MAX_NUM_OF_FILES_IN_FOLDER = 5000
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
-ORIGINAL_SIZE = 0 # 1 for yes, 0 for no
-JUST_IMAGE = 1 # 1 for yes, 0 for no
+ORIGINAL_SIZE = 1 #0 # 1 for yes, 0 for no
+JUST_IMAGE = 0 #1 # 1 for yes, 0 for no
 
 
 photoDetails = ["Photographer:","Title:","Captured:","IMO:","Photo Category:","Description:"]
@@ -38,20 +38,56 @@ logging.debug("Process started at " + str(datetime.datetime.now()))
 
 def save_image(ID,justImage,outFolder):
     url = sourceLink + ID
+    # url = "https://www.shipspotting.com/photos/gallery?imo=9300398"
     # html = urllib.request.urlopen(url,timeout = 300).read()
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     html = urllib.request.urlopen(req, timeout=300).read()
     soup = BeautifulSoup(html,"lxml")
 
-    images = [img for img in soup.findAll('img')]
+    images = [img for img in soup.find_all('img')]
     image_links = [each.get('src') for each in images]
+    # Dictionary to store extracted info
+    info = {}
+    # List of fields you want to extract
+    fields_to_extract = [
+        "Photographer", "Title", "Photo Category", "Added", "Views", "Image Resolution", "Description", "Current name", "Current flag", "Home port", "Callsign", "IMO", "MMSI", "Build year", "Builder", "Manager", "Owner", "Class society", "Vessel Type", "Gross tonnage", "Summer DWT", "Length", "Beam", "Draught", "Photos", "Former name"
+    ]
+
     if not justImage:
-        tags = [tr for tr in soup.findAll('td')]
-        tr_text = [each.getText() for each in tags]
-        
+        #WJ: this is obsolete and website does not use this to pass information
+        # tags = [tr for tr in soup.find_all('td')]
+        # tr_text = [each.getText() for each in tags]
+
+        #WJ: this is new way of passing information
+        # Find all title-value pairs
+        items = soup.find_all("div", class_="information-item")
+        for item in items:
+            title_span = item.find("span", class_="information-item__title")
+            value_span = item.find("span", class_="information-item__value")
+            if title_span and value_span:
+                title = title_span.get_text(strip=True).replace(":", "")
+                value = value_span.get_text(strip=True)
+                info[title] = value
+
+        #get descriptions in Photo details
+        desc_div = soup.find("div", class_="summary-photo__card-photo__desc-container")
+        if desc_div:
+            description = desc_div.get_text(strip=True)
+            info['Description']=description
+
+        #get Former name in Vessel particulars
+        former_name_container = soup.find("div", class_="summary-photo__card-general__former-name__container")
+        if former_name_container:
+            name_tag = former_name_container.find("a")
+            info['Former name']= name_tag.get_text(strip=True) if name_tag else ""
+            
+        # Example output
+        for key, val in info.items():
+            print(f"{key}: {val}")
+
     filename = " "
     for each in image_links:
-        if each is not None and "https" in each and "jpg" in each and "photos/middle" in each:
+        if each is not None and "https" in each and "jpg" in each and "photos/big" in each:
             filename=each.split('/')[-1]
             filename=filename.split('?')[0] #change 3608498.jpg?cb=0 to 3608498.jpg
             # f = urllib.request.urlopen(each)
@@ -69,20 +105,23 @@ def save_image(ID,justImage,outFolder):
     if filename != " " and not justImage:
         textFile = filename.split('.')[0]
         tFile = codecs.open(os.path.join(outFolder,filename)+'.dat','w','utf-8')    
-        for index,each in enumerate(tr_text):
-            for impT in impText:
-                if impT == each:
-                    tFile.write(each + ' ' + tr_text[index+1] + '\n')
-                    break
-        for index,each in enumerate(tr_text):
-            for impT in impText2:
-                if impT == each:
-                    for ind in range(1,20):
-                        if tr_text[index+ind] != "":
-                            tFile.write(each + ' ' + tr_text[index+ind] + '\n')
-                        else:
-                            break
-                    break
+        # for index,each in enumerate(tr_text):
+        #     for impT in impText:
+        #         if impT == each:
+        #             tFile.write(each + ' ' + tr_text[index+1] + '\n')
+        #             break
+        # for index,each in enumerate(tr_text):
+        #     for impT in impText2:
+        #         if impT == each:
+        #             for ind in range(1,20):
+        #                 if tr_text[index+ind] != "":
+        #                     tFile.write(each + ' ' + tr_text[index+ind] + '\n')
+        #                 else:
+        #                     break
+        #             break
+
+        for field in fields_to_extract:
+            tFile.write(f"{field}: {info[field]}\n")
         tFile.close()
     if filename == " ":
         return 0
