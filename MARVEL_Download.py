@@ -51,8 +51,9 @@ def save_image(ID,justImage,outFolder):
         
     filename = " "
     for each in image_links:
-        if "http" in each and "jpg" in each and "photos/middle" in each:
+        if each is not None and "https" in each and "jpg" in each and "photos/middle" in each:
             filename=each.split('/')[-1]
+            filename=filename.split('?')[0] #change 3608498.jpg?cb=0 to 3608498.jpg
             # f = urllib.request.urlopen(each)
             img_req = urllib.request.Request(each, headers={"User-Agent": "Mozilla/5.0"})
             f = urllib.request.urlopen(img_req)
