@@ -60,7 +60,7 @@ def save_image(ID,justImage,outFolder):
             with open(os.path.join(outFolder,filename), "wb") as local_file:
                 local_file.write(f.read())
             if ORIGINAL_SIZE == 0:
-                img = Image.open(os.path.join(outFolder,filename)).resize((IMAGE_HEIGHT,IMAGE_WIDTH), Image.ANTIALIAS)
+                img = Image.open(os.path.join(outFolder,filename)).resize((IMAGE_HEIGHT,IMAGE_WIDTH), Image.LANCZOS)
                 os.remove(os.path.join(outFolder,filename))
                 out = file(os.path.join(outFolder,filename),"wb")
                 img.save(out,"JPEG")
