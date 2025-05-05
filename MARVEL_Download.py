@@ -62,8 +62,8 @@ def save_image(ID,justImage,outFolder):
             if ORIGINAL_SIZE == 0:
                 img = Image.open(os.path.join(outFolder,filename)).resize((IMAGE_HEIGHT,IMAGE_WIDTH), Image.LANCZOS)
                 os.remove(os.path.join(outFolder,filename))
-                out = file(os.path.join(outFolder,filename),"wb")
-                img.save(out,"JPEG")
+                with open(os.path.join(outFolder,filename), "wb") as out:
+                    img.save(out,"JPEG")
             break
         
     if filename != " " and not justImage:
