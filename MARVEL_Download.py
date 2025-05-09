@@ -14,10 +14,10 @@ import io
 import http.client
 
 ##Uncomment the related dat file ('VesselClassification.dat' for Vessel Classification, 'IMOTrainAndTest.dat' for Vessel Verification/Retrieval/Recognition tasks.)
-FILE_TO_DOWNLOAD_FROM = "VesselClassification.dat"
+FILE_TO_DOWNLOAD_FROM = "VesselClassification_no_duplicate.dat"
 ##FILE_TO_DOWNLOAD_FROM = "IMOTrainAndTest.dat" 
 
-NUMBER_OF_WORKERS = 1
+NUMBER_OF_WORKERS = 10
 MAX_NUM_OF_FILES_IN_FOLDER = 5000
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
@@ -45,6 +45,7 @@ def save_image(ID,justImage,outFolder):
     url = sourceLink + ID
     # url = "https://www.shipspotting.com/photos/gallery?imo=9300398"
     # html = urllib.request.urlopen(url,timeout = 300).read()
+    print(f'url: {url}')
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     html = urllib.request.urlopen(req, timeout=300).read()
     soup = BeautifulSoup(html,"lxml")
