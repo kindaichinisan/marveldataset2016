@@ -174,9 +174,13 @@ def worker(content,workerNo):
                 logging.debug(str(ID) + "\t - Downloaded... - " + str(workerIndex) + "\t/" + str(len(content)))
             else:
                 logging.debug(str(ID) + "\t - NO SUCH FILE  - " + str(workerIndex) + "\t/" + str(len(content)))
-        except:
-            traceback.print_exc()
+        # except:
+        #     traceback.print_exc()
+        except Exception as e:
+            logging.exception(f"❌ Error while processing ID {ID} at index {workerIndex} - {e}")
+
     logging.debug(str(datetime.datetime.now()) + "-------------- DONE ")
+
     return
 
 priorFiles = []
@@ -200,6 +204,11 @@ for index,eachLine in enumerate(downloadContent):
 
 numOfFiles = len(finalContent)
 
+output_file = "to_download_ids.txt"
+
+with open(output_file, "w", encoding="utf-8") as out:
+    for content in finalContent:
+        out.write(content + "\n")
 numOfFilesPerEachWorker = [int(math.floor(float(numOfFiles)/NUMBER_OF_WORKERS)) for x in range(0,NUMBER_OF_WORKERS-1)]
 numOfFilesPerEachWorker.append(numOfFiles - (NUMBER_OF_WORKERS-1)*int(round(numOfFiles/NUMBER_OF_WORKERS,0)))
 
