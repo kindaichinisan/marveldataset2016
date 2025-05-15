@@ -1,7 +1,7 @@
 import os
 
 # Folder containing the images
-image_folder = r"D:\WJ_git\marveldataset2016\W0_1"
+image_folder = r"D:\WJ_git\marveldataset2016\W"
 
 # Output file
 output_file = "image_ids.txt"
